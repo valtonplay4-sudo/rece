@@ -1,167 +1,850 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CENTRAL TÁTICA // RECEPTOR</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  :root {
-    --bg-dark: #030712; --panel-bg: rgba(6, 15, 25, 0.85);
-    --neon-green: #10b981; --neon-cyan: #06b6d4; --neon-red: #ef4444;
-    --border-color: rgba(6, 182, 212, 0.25); --font-mono: monospace;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-mono); color: #e2e8f0; background: var(--bg-dark); padding: 12px; }
-  .app { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
-  .terminal-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
-  header.terminal-card { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-  .pill { font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--border-color); color: var(--neon-cyan); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block; }
-  .dot.on { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-  .player { width: 100%; aspect-ratio: 4/3; background: #000; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; position: relative; }
-  .player img { width: 100%; height: 100%; object-fit: contain; display: none; }
-  .player .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #475569; text-align: center; }
-  .hacker-btn { padding: 8px 12px; border: 1px solid var(--border-color); background: rgba(6, 182, 212, 0.1); color: #fff; font-size: 0.75rem; cursor: pointer; border-radius: 4px; }
-  .hacker-btn:hover { background: rgba(6, 182, 212, 0.3); }
-  #map { width: 100%; height: 320px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; }
-  .link-box { grid-column: 1 / -1; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--neon-green); padding: 12px; border-radius: 6px; display: flex; gap: 10px; align-items: center; }
-  .link-input { flex: 1; padding: 8px; background: #000; border: 1px solid var(--border-color); color: var(--neon-green); font-family: monospace; font-size: 0.8rem; }
-  .radar-icon { width: 18px; height: 18px; border-radius: 50%; background: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); border: 2px solid #fff; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CENTRAL TÁTICA v2.5 // RECEPTOR</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23030712' stroke='%2306b6d4' stroke-width='6'/><circle cx='50' cy='50' r='25' fill='none' stroke='%2310b981' stroke-width='4'/><circle cx='50' cy='50' r='6' fill='%23ef4444'/><line x1='50' y1='5' x2='50' y2='95' stroke='%2306b6d4' stroke-width='3' stroke-dasharray='4'/><line x1='5' y1='50' x2='95' y2='50' stroke='%2306b6d4' stroke-width='3' stroke-dasharray='4'/></svg>">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-dark: #030712; 
+            --panel-bg: rgba(6, 15, 25, 0.92);
+            --neon-green: #10b981; 
+            --neon-cyan: #06b6d4; 
+            --neon-red: #ef4444;
+            --neon-yellow: #f59e0b;
+            --border-color: rgba(6, 182, 212, 0.3); 
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: var(--font-mono); 
+            color: #e2e8f0; 
+            background: var(--bg-dark); 
+            min-height: 100vh;
+            background-image: radial-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        /* Custom scrollbars for tactical look */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(3, 7, 18, 0.9); }
+        ::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+
+        .terminal-card { 
+            background: var(--panel-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            padding: 14px; 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .pill { 
+            font-size: 0.72rem; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            background: rgba(6, 182, 212, 0.08); 
+            border: 1px solid var(--border-color); 
+            color: var(--neon-cyan); 
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .dot { 
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            background: #64748b; 
+            display: inline-block; 
+            transition: all 0.3s ease;
+        }
+
+        .dot.on { 
+            background: var(--neon-green); 
+            box-shadow: 0 0 10px var(--neon-green); 
+        }
+
+        .dot.blink {
+            animation: pulse-dot 1s infinite alternate;
+        }
+
+        @keyframes pulse-dot {
+            from { opacity: 0.3; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1.2); box-shadow: 0 0 12px var(--neon-green); }
+        }
+
+        /* Video Container & Canvas Frame Double Buffering */
+        .player-wrapper { 
+            width: 100%; 
+            aspect-ratio: 16/9; 
+            background: #000; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            position: relative; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+            .player-wrapper {
+                aspect-ratio: 4/3;
+            }
+        }
+
+        #streamCanvas { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            display: block; 
+        }
+
+        .player-placeholder { 
+            position: absolute; 
+            inset: 0; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            font-size: 0.8rem; 
+            color: #64748b; 
+            text-align: center; 
+            gap: 12px;
+            background: rgba(3, 7, 18, 0.95);
+            z-index: 10;
+        }
+
+        .hacker-btn { 
+            padding: 9px 14px; 
+            border: 1px solid var(--border-color); 
+            background: rgba(6, 182, 212, 0.12); 
+            color: #fff; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-family: var(--font-mono);
+            font-weight: 700;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .hacker-btn:hover, .hacker-btn:active { 
+            background: rgba(6, 182, 212, 0.3); 
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .hacker-btn.active {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .hacker-btn.btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .hacker-btn.btn-danger:hover {
+            background: rgba(239, 68, 68, 0.35);
+        }
+
+        #map { 
+            width: 100%; 
+            height: 340px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: #090d16;
+            z-index: 1;
+        }
+
+        @media (max-width: 640px) {
+            #map { height: 280px; }
+        }
+
+        /* Radar pulses & target pin design */
+        .radar-icon { 
+            width: 22px; 
+            height: 22px; 
+            border-radius: 50%; 
+            background: var(--neon-cyan); 
+            box-shadow: 0 0 15px var(--neon-cyan); 
+            border: 2px solid #fff; 
+            animation: pulse-radar 1.6s infinite ease-out;
+        }
+
+        @keyframes pulse-radar {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(6, 182, 212, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+        }
+
+        /* Map custom overrides for ultra-dark high tactical contrast */
+        .leaflet-container { background: #080d1a !important; font-family: var(--font-mono) !important; }
+        .leaflet-control-zoom a { background: rgba(6, 15, 25, 0.9) !important; color: var(--neon-cyan) !important; border-color: var(--border-color) !important; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #090d16 !important; color: #e2e8f0 !important; border: 1px solid var(--neon-cyan); font-size: 0.75rem; }
+
+        /* Log console styling */
+        .log-console {
+            background: #02050b;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 6px;
+            font-size: 0.72rem;
+            height: 140px;
+            overflow-y: auto;
+            padding: 8px 12px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+        .log-entry { margin-bottom: 3px; display: flex; gap: 8px; align-items: flex-start; }
+        .log-time { color: var(--neon-cyan); opacity: 0.8; flex-shrink: 0; }
+        .log-info { color: #cbd5e1; }
+        .log-success { color: var(--neon-green); }
+        .log-warn { color: var(--neon-yellow); }
+        .log-error { color: var(--neon-red); }
+    </style>
 </head>
-<body>
+<body class="p-2 sm:p-4">
 
-<div class="app">
-  <header class="terminal-card">
-    <h1>[PAINEL DE RECEPÇÃO PRIVADO]</h1>
-    <div>
-      <span class="pill" id="txIpPill">IP: ---</span>
-      <span class="pill" id="devicePill">APARELHO: ---</span>
-      <span class="pill"><span class="dot" id="statusDot"></span> <span id="statusText">AGUARDANDO</span></span>
-    </div>
-  </header>
+<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
 
-  <div class="link-box">
-    <button class="hacker-btn" id="btnGenLink" style="background:var(--neon-green); color:#000; font-weight:bold;">GERAR NOVO LINK ÚNICO</button>
-    <input type="text" class="link-input" id="generatedLink" readonly placeholder="Clique no botão para gerar o link exclusivo...">
-    <button class="hacker-btn" id="btnCopy">COPIAR</button>
-  </div>
+    <header class="terminal-card lg:col-span-12 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+        <div class="flex items-center justify-between md:justify-start gap-3">
+            <h1 class="text-base sm:text-lg font-bold text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-satellite-dish text-emerald-400 text-xl animate-pulse"></i>
+                <span>CENTRAL TÁTICA</span>
+                <span class="text-xs font-normal text-slate-400 hidden sm:inline">// RECEPTOR v2.5</span>
+            </h1>
+            <div class="sm:hidden">
+                <span class="pill"><span class="dot" id="statusDot"></span> <span id="statusText">DESCONECTADO</span></span>
+            </div>
+        </div>
 
-  <section class="terminal-card">
-    <div class="player">
-      <div class="placeholder" id="placeholder">AGUARDANDO TRANSMISSOR CONECTAR...</div>
-      <img id="remoteImg">
-    </div>
-    <div style="display:flex; gap:8px; margin-top:10px;">
-      <button class="hacker-btn" id="btnCamEnv" style="flex:1;">CÂMERA TRASEIRA</button>
-      <button class="hacker-btn" id="btnCamUser" style="flex:1;">CÂMERA FRONTAL</button>
-    </div>
-  </section>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="pill hidden sm:inline-flex"><span class="dot" id="statusDotDesktop"></span> <span id="statusTextDesktop">AGUARDANDO CONEXÃO</span></span>
+            <span class="pill" id="txIpPill"><i class="fa-solid fa-network-wired text-cyan-400"></i> IP: <span class="text-slate-300" id="txIpVal">---</span></span>
+            <span class="pill" id="devicePill" title="Dispositivo Detectado"><i class="fa-solid fa-mobile-screen-button text-cyan-400"></i> <span class="text-emerald-400 font-bold" id="deviceVal">DESCONHECIDO</span></span>
+            <span class="pill" id="pingPill"><i class="fa-solid fa-gauge-high text-cyan-400"></i> LATÊNCIA: <span id="pingVal">--</span> ms</span>
+        </div>
+    </header>
 
-  <section class="terminal-card">
-    <div id="map"></div>
-  </section>
+    <section class="terminal-card lg:col-span-12 bg-emerald-950/10 border-emerald-500/30">
+        <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <button class="hacker-btn !bg-emerald-500 !text-black hover:!bg-emerald-400 font-extrabold px-4 py-2" id="btnGenLink">
+                <i class="fa-solid fa-key"></i> GERAR NOVO LINK
+            </button>
+            <div class="relative flex-1">
+                <input type="text" class="w-full bg-black/90 border border-cyan-500/30 text-emerald-400 text-xs sm:text-sm px-3 py-2 rounded font-mono outline-none focus:border-cyan-400 pr-10" id="generatedLink" readonly placeholder="Clique para gerar link privado...">
+            </div>
+            <div class="flex gap-2">
+                <button class="hacker-btn flex-1 sm:flex-none" id="btnCopy">
+                    <i class="fa-solid fa-copy"></i> <span id="copyBtnText">COPIAR</span>
+                </button>
+                <button class="hacker-btn flex-1 sm:flex-none" id="btnQrToggle" title="Exibir QR Code">
+                    <i class="fa-solid fa-qrcode"></i> <span class="sm:hidden">QR</span>
+                </button>
+            </div>
+        </div>
+        <!-- Modal / Container QR Code Expandable -->
+        <div id="qrContainer" class="hidden mt-3 p-3 bg-black/80 border border-cyan-500/30 rounded flex flex-col items-center justify-center gap-2">
+            <div id="qrcode" class="p-2 bg-white rounded"></div>
+            <span class="text-xs text-slate-400">Escaneie com a câmera do celular transmissor</span>
+        </div>
+    </section>
+
+    <section class="terminal-card lg:col-span-6 flex flex-col gap-3">
+        <div class="flex justify-between items-center text-xs text-cyan-400 font-bold border-b border-cyan-500/20 pb-2">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-video"></i> TRANSMISSÃO EM TEMPO REAL
+            </span>
+            <span id="camModeBadge" class="text-emerald-400 text-[10px] bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
+                CÂMERA: FRONTAL [PADRÃO]
+            </span>
+        </div>
+
+        <!-- Canvas Stream Container -->
+        <div class="player-wrapper" id="playerWrapper">
+            <div class="player-placeholder" id="placeholder">
+                <i class="fa-solid fa-satellite fa-spin text-3xl text-cyan-400"></i>
+                <span class="px-4">AGUARDANDO TRANSMISSOR SE CONECTAR AO LINK...</span>
+                <span class="text-[11px] text-slate-500 max-w-xs">Abra o link gerado no celular ou dispositivo remoto para iniciar o feed.</span>
+            </div>
+            <canvas id="streamCanvas"></canvas>
+        </div>
+
+        <!-- Camera & Stream Control Actions -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button class="hacker-btn active text-xs" id="btnCamFront" title="Alternar para Câmera Frontal">
+                <i class="fa-solid fa-user"></i> FRONTAL
+            </button>
+            <button class="hacker-btn text-xs" id="btnCamBack" title="Alternar para Câmera Traseira">
+                <i class="fa-solid fa-camera"></i> TRASEIRA
+            </button>
+            <button class="hacker-btn text-xs" id="btnSnapshot" title="Capturar imagem atual">
+                <i class="fa-solid fa-camera-retro"></i> FOTO
+            </button>
+            <button class="hacker-btn text-xs" id="btnFullscreen" title="Tela Cheia">
+                <i class="fa-solid fa-expand"></i> FULLSCREEN
+            </button>
+        </div>
+
+        <!-- Telemetry Data Overlay -->
+        <div class="grid grid-cols-3 gap-2 text-[11px] text-slate-400 pt-1 border-t border-cyan-500/10">
+            <div class="bg-black/40 p-2 rounded border border-cyan-500/10">
+                <div class="text-slate-500">RESOLUÇÃO</div>
+                <div class="text-cyan-400 font-bold" id="telemetryRes">0 x 0</div>
+            </div>
+            <div class="bg-black/40 p-2 rounded border border-cyan-500/10">
+                <div class="text-slate-500">QUADROS / SEC</div>
+                <div class="text-emerald-400 font-bold" id="telemetryFps">0 FPS</div>
+            </div>
+            <div class="bg-black/40 p-2 rounded border border-cyan-500/10">
+                <div class="text-slate-500">BATERIA</div>
+                <div class="text-yellow-400 font-bold" id="telemetryBattery">---</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="terminal-card lg:col-span-6 flex flex-col gap-3">
+        <div class="flex justify-between items-center text-xs text-cyan-400 font-bold border-b border-cyan-500/20 pb-2">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-map-location-dot"></i> RASTREAMENTO GPS HD
+            </span>
+            <div class="flex gap-2">
+                <button id="btnRecenter" class="text-[11px] text-cyan-300 hover:text-cyan-100 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
+                    <i class="fa-solid fa-crosshairs"></i> FOCAR ALVO
+                </button>
+                <button id="btnMapStyle" class="text-[11px] text-slate-300 hover:text-white bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">
+                    <i class="fa-solid fa-layer-group"></i> ESTILO
+                </button>
+            </div>
+        </div>
+
+        <!-- High Accuracy Leaflet Map -->
+        <div id="map"></div>
+
+        <!-- Coordinates Details Readout Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+            <div class="bg-black/50 p-2 rounded border border-cyan-500/20">
+                <div class="text-slate-400 text-[10px]">LATITUDE</div>
+                <div class="text-emerald-400 font-bold truncate" id="gpsLat">0.000000</div>
+            </div>
+            <div class="bg-black/50 p-2 rounded border border-cyan-500/20">
+                <div class="text-slate-400 text-[10px]">LONGITUDE</div>
+                <div class="text-emerald-400 font-bold truncate" id="gpsLng">0.000000</div>
+            </div>
+            <div class="bg-black/50 p-2 rounded border border-cyan-500/20">
+                <div class="text-slate-400 text-[10px]">PRECISÃO GPS</div>
+                <div class="text-cyan-400 font-bold" id="gpsAcc">-- m</div>
+            </div>
+            <div class="bg-black/50 p-2 rounded border border-cyan-500/20">
+                <div class="text-slate-400 text-[10px]">VELOCIDADE</div>
+                <div class="text-yellow-400 font-bold" id="gpsSpeed">0.0 km/h</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="terminal-card lg:col-span-12">
+        <div class="flex justify-between items-center text-xs text-cyan-400 font-bold mb-2">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-emerald-400"></i> TERMINAL DE LOGS DO SISTEMA
+            </span>
+            <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer">
+                    <input type="checkbox" id="chkAutoScroll" checked class="accent-cyan-500"> Auto-scroll
+                </label>
+                <button id="btnClearLogs" class="text-[10px] text-slate-400 hover:text-red-400">
+                    <i class="fa-solid fa-trash-can"></i> LIMPAR
+                </button>
+            </div>
+        </div>
+
+        <div class="log-console" id="logConsole">
+            <!-- Dynamic logs stream here -->
+        </div>
+    </section>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-  const RENDER_URL = "https://maestro-server-si1f.onrender.com";
-  const TRANSMITTER_BASE_URL = "https://valtonplay4-sudo.github.io/trasm/index.html";
+    // Configurações de Servidor
+    const TRANSMITTER_BASE_URL = "https://valtonplay4-sudo.github.io/trasmissorr/index.html";
+    const SOCKET_SERVER_URL = "https://socket-server-production-0f3f.up.railway.app";
 
-  let currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
-  
-  const socket = io(RENDER_URL, { transports: ['websocket', 'polling'] });
+    // Elementos DOM principais
+    const btnGenLink = document.getElementById('btnGenLink');
+    const generatedLinkInput = document.getElementById('generatedLink');
+    const btnCopy = document.getElementById('btnCopy');
+    const copyBtnText = document.getElementById('copyBtnText');
+    const btnQrToggle = document.getElementById('btnQrToggle');
+    const qrContainer = document.getElementById('qrContainer');
+    const qrcodeDiv = document.getElementById('qrcode');
 
-  socket.on('connect', () => {
-    socket.emit('join-room', currentRoomId);
-  });
+    // Status Pills
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const statusDotDesktop = document.getElementById('statusDotDesktop');
+    const statusTextDesktop = document.getElementById('statusTextDesktop');
+    const txIpVal = document.getElementById('txIpVal');
+    const deviceVal = document.getElementById('deviceVal');
+    const pingVal = document.getElementById('pingVal');
 
-  const linkInput = document.getElementById('generatedLink');
-  
-  function generateNewRoom() {
-    currentRoomId = 'sala_' + Math.random().toString(36).substring(2, 9);
-    socket.emit('join-room', currentRoomId);
-    linkInput.value = `${TRANSMITTER_BASE_URL}?id=${currentRoomId}`;
-    
-    // Reseta Interface para Novo Transmissor Isolado
-    document.getElementById('remoteImg').style.display = 'none';
-    document.getElementById('placeholder').style.display = 'flex';
-    document.getElementById('statusDot').className = 'dot';
-    document.getElementById('statusText').textContent = 'AGUARDANDO';
-    document.getElementById('txIpPill').textContent = 'IP: ---';
-    document.getElementById('devicePill').textContent = 'APARELHO: ---';
-  }
+    // Canvas de Transmissão sem flicker
+    const playerWrapper = document.getElementById('playerWrapper');
+    const placeholder = document.getElementById('placeholder');
+    const canvas = document.getElementById('streamCanvas');
+    const ctx = canvas.getContext('2d');
 
-  document.getElementById('btnGenLink').addEventListener('click', generateNewRoom);
-  
-  // Gera a primeira sala ao carregar
-  generateNewRoom();
+    // Botões de Câmera e Ações
+    const btnCamFront = document.getElementById('btnCamFront');
+    const btnCamBack = document.getElementById('btnCamBack');
+    const btnSnapshot = document.getElementById('btnSnapshot');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const camModeBadge = document.getElementById('camModeBadge');
 
-  document.getElementById('btnCopy').addEventListener('click', () => {
-    if (!linkInput.value) return;
-    navigator.clipboard.writeText(linkInput.value);
-    alert("Link copiado com sucesso!");
-  });
+    // Telemetria
+    const telemetryRes = document.getElementById('telemetryRes');
+    const telemetryFps = document.getElementById('telemetryFps');
+    const telemetryBattery = document.getElementById('telemetryBattery');
 
-  // MAPA GLOBAL COM NOME DE BAIRROS E RUAS (OpenStreetMap)
-  const map = L.map('map').setView([0, 0], 2);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+    // Leitura GPS
+    const gpsLat = document.getElementById('gpsLat');
+    const gpsLng = document.getElementById('gpsLng');
+    const gpsAcc = document.getElementById('gpsAcc');
+    const gpsSpeed = document.getElementById('gpsSpeed');
+    const btnRecenter = document.getElementById('btnRecenter');
+    const btnMapStyle = document.getElementById('btnMapStyle');
 
-  const radarIcon = L.divIcon({ className: '', html: '<div class="radar-icon"></div>', iconSize: [18, 18] });
-  let marker = null;
+    // Logs Console
+    const logConsole = document.getElementById('logConsole');
+    const btnClearLogs = document.getElementById('btnClearLogs');
+    const chkAutoScroll = document.getElementById('chkAutoScroll');
 
-  // PROCESSA DADOS APENAS SE FOR DA SUA SALA ÚNICA
-  socket.on('receive-frame', (data) => {
-    const rId = data.roomId || (data.data ? data.data.roomId : null);
-    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+    // Variáveis de Estado
+    let currentRoomId = '';
+    let socket = null;
+    let map = null;
+    let marker = null;
+    let accuracyCircle = null;
+    let pathPolyline = null;
+    let pathCoords = [];
+    let qrcodeObj = null;
 
-    const frame = data.frame || data;
-    document.getElementById('placeholder').style.display = 'none';
-    const img = document.getElementById('remoteImg');
-    img.src = frame;
-    img.style.display = 'block';
-    document.getElementById('statusDot').className = 'dot on';
-    document.getElementById('statusText').textContent = 'ONLINE';
-  });
+    // Métricas de Desempenho
+    let frameCount = 0;
+    let lastFpsCheck = Date.now();
+    let currentFps = 0;
+    let activeCameraMode = 'user'; // Padrão: Câmera Frontal
+    let isDarkStyle = true;
+    let mapTileLayer = null;
 
-  socket.on('receive-info', (data) => {
-    const rId = data.roomId;
-    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+    function addLog(msg, type = 'info') {
+        const timeStr = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
 
-    const info = data.info || data;
-    if (info.ip) document.getElementById('txIpPill').textContent = `IP: ${info.ip}`;
-    if (info.deviceModel) document.getElementById('devicePill').textContent = `APARELHO: ${info.deviceModel}`;
-  });
+        let colorClass = 'log-info';
+        if (type === 'success') colorClass = 'log-success';
+        if (type === 'warn') colorClass = 'log-warn';
+        if (type === 'error') colorClass = 'log-error';
 
-  socket.on('receive-location', (data) => {
-    const rId = data.roomId;
-    if (rId && rId !== currentRoomId) return; // Filtro de isolamento de sala
+        entry.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="${colorClass}">${msg}</span>`;
+        logConsole.appendChild(entry);
 
-    const loc = data.location || data;
-    if (loc && loc.lat) {
-      const latLng = [loc.lat, loc.lng];
-      if (!marker) {
-        marker = L.marker(latLng, { icon: radarIcon }).addTo(map);
-        map.setView(latLng, 17); // Zoom aproximado em nível de bairro/rua
-      } else {
-        marker.setLatLng(latLng);
-      }
+        if (chkAutoScroll.checked) {
+            logConsole.scrollTop = logConsole.scrollHeight;
+        }
     }
-  });
 
-  document.getElementById('btnCamEnv').addEventListener('click', () => {
-    socket.emit('send-command', { roomId: currentRoomId, command: 'environment' });
-  });
-  document.getElementById('btnCamUser').addEventListener('click', () => {
-    socket.emit('send-command', { roomId: currentRoomId, command: 'user' });
-  });
+    btnClearLogs.addEventListener('click', () => {
+        logConsole.innerHTML = '';
+        addLog('Terminal de logs limpo.', 'info');
+    });
+
+    function parseDeviceDetails(uaString) {
+        if (!uaString) return 'Dispositivo Remoto';
+        const ua = uaString.toLowerCase();
+
+        // Android phone brands regex detection
+        if (ua.includes('infinix')) return 'Infinix Smartphone';
+        if (ua.includes('redmi')) return 'Xiaomi Redmi';
+        if (ua.includes('poco')) return 'Xiaomi POCO';
+        if (ua.includes('xiaomi') || ua.includes('mi ')) return 'Xiaomi Smartphone';
+        if (ua.includes('samsung') || ua.includes('sm-')) return 'Samsung Galaxy';
+        if (ua.includes('pixel')) return 'Google Pixel';
+        if (ua.includes('oneplus')) return 'OnePlus';
+        if (ua.includes('realme')) return 'Realme';
+        if (ua.includes('moto') || ua.includes('motorola')) return 'Motorola';
+
+        // Apple Devices
+        if (ua.includes('iphone')) return 'Apple iPhone';
+        if (ua.includes('ipad')) return 'Apple iPad';
+        if (ua.includes('macintosh') || ua.includes('mac os')) return 'Apple MacBook / Mac';
+
+        // Laptops & Desktops
+        if (ua.includes('dell')) return 'Notebook Dell';
+        if (ua.includes('hp') || ua.includes('hewlett-packard')) return 'Notebook HP';
+        if (ua.includes('lenovo')) return 'Lenovo Laptop';
+        if (ua.includes('asus')) return 'ASUS Device';
+        if (ua.includes('acer')) return 'Acer Laptop';
+        if (ua.includes('surface')) return 'Microsoft Surface';
+        if (ua.includes('windows')) return 'PC Windows';
+        if (ua.includes('linux')) return 'Linux Workstation';
+
+        if (ua.includes('android')) return 'Android Mobile';
+        return 'Aparelho Conectado';
+    }
+
+    function initMap() {
+        // Tile layer escuro de alta performance (Suporta até Zoom 20 com maxNativeZoom 19)
+        const darkUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        const streetUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+        map = L.map('map', {
+            zoomControl: true,
+            maxZoom: 20
+        }).setView([0, 0], 2);
+
+        mapTileLayer = L.tileLayer(darkUrl, {
+            attribution: '&copy; CARTO / OpenStreetMap',
+            subdomains: 'abcd',
+            maxNativeZoom: 19,
+            maxZoom: 20
+        }).addTo(map);
+
+        // Caminho gravado no mapa (Trilha Tática)
+        pathPolyline = L.polyline([], {
+            color: '#06b6d4',
+            weight: 3,
+            opacity: 0.8,
+            dashArray: '6, 8'
+        }).addTo(map);
+
+        addLog('Mapa tático inicializado (Zoom máximo até 20x sem erro visual).', 'success');
+    }
+
+    // Alternar Estilo de Mapa (Dark / Street)
+    btnMapStyle.addEventListener('click', () => {
+        isDarkStyle = !isDarkStyle;
+        const newUrl = isDarkStyle 
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        
+        map.removeLayer(mapTileLayer);
+        mapTileLayer = L.tileLayer(newUrl, {
+            subdomains: 'abcd',
+            maxNativeZoom: 19,
+            maxZoom: 20
+        }).addTo(map);
+
+        addLog(`Estilo do mapa alterado para: ${isDarkStyle ? 'Escuro Tático' : 'Vias Padrão'}`, 'info');
+    });
+
+    // Ícone de Radar Pulsante no Mapa
+    const radarIcon = L.divIcon({
+        className: 'custom-radar-marker',
+        html: '<div class="radar-icon"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+
+    function updateLocation(lat, lng, accuracy = 0, speed = 0) {
+        if (!map || isNaN(lat) || isNaN(lng)) return;
+
+        const coords = [lat, lng];
+        gpsLat.innerText = lat.toFixed(6);
+        gpsLng.innerText = lng.toFixed(6);
+        gpsAcc.innerText = accuracy ? `${Math.round(accuracy)} m` : 'Alta';
+        gpsSpeed.innerText = speed ? `${(speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
+
+        // Atualizar Marcador
+        if (!marker) {
+            marker = L.marker(coords, { icon: radarIcon }).addTo(map);
+            marker.bindPopup(`<b>ALVO RASTREADO</b><br>Lat: ${lat.toFixed(5)}<br>Lng: ${lng.toFixed(5)}`).openPopup();
+            map.setView(coords, 17);
+        } else {
+            marker.setLatLng(coords);
+        }
+
+        // Círculo de Precisão
+        if (accuracy > 0) {
+            if (!accuracyCircle) {
+                accuracyCircle = L.circle(coords, {
+                    radius: accuracy,
+                    color: '#10b981',
+                    fillColor: '#10b981',
+                    fillOpacity: 0.15,
+                    weight: 1
+                }).addTo(map);
+            } else {
+                accuracyCircle.setLatLng(coords);
+                accuracyCircle.setRadius(accuracy);
+            }
+        }
+
+        // Histórico de Rota (Polyline)
+        pathCoords.push(coords);
+        if (pathCoords.length > 500) pathCoords.shift();
+        pathPolyline.setLatLngs(pathCoords);
+    }
+
+    btnRecenter.addEventListener('click', () => {
+        if (marker) {
+            map.setView(marker.getLatLng(), 18);
+            addLog('Foco do mapa centralizado na posição atual do alvo.', 'info');
+        } else {
+            addLog('Nenhum sinal GPS recebido ainda para recentrar.', 'warn');
+        }
+    });
+
+    const imgBuffer = new Image();
+    imgBuffer.onload = () => {
+        // Redimensiona o canvas dinamicamente conforme o quadro
+        if (canvas.width !== imgBuffer.width || canvas.height !== imgBuffer.height) {
+            canvas.width = imgBuffer.width;
+            canvas.height = imgBuffer.height;
+            telemetryRes.innerText = `${imgBuffer.width} x ${imgBuffer.height}`;
+        }
+        ctx.drawImage(imgBuffer, 0, 0);
+
+        // Esconder placeholder
+        placeholder.style.display = 'none';
+
+        // Cálculo de FPS
+        frameCount++;
+        const now = Date.now();
+        if (now - lastFpsCheck >= 1000) {
+            currentFps = frameCount;
+            frameCount = 0;
+            lastFpsCheck = now;
+            telemetryFps.innerText = `${currentFps} FPS`;
+        }
+    };
+
+    function initSocket() {
+        addLog('Conectando ao servidor de sinalização WebSocket...', 'info');
+
+        socket = io(SOCKET_SERVER_URL, {
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 10,
+            timeout: 10000
+        });
+
+        socket.on('connect', () => {
+            addLog(`WebSocket conectado com sucesso. ID do Socket: ${socket.id}`, 'success');
+            if (currentRoomId) {
+                socket.emit('join-room', currentRoomId, 'receptor');
+                addLog(`Ingressado na sala isolada: [${currentRoomId}]`, 'info');
+            }
+        });
+
+        socket.on('disconnect', () => {
+            updateConnectionStatus(false, 'DESCONECTADO');
+            addLog('Conexão WebSocket interrompida.', 'error');
+        });
+
+        // Eventos do Transmissor
+        socket.on('transmitter-status', (data) => {
+            if (data && data.connected) {
+                updateConnectionStatus(true, 'CONECTADO');
+                placeholder.style.display = 'none';
+
+                if (data.ip) txIpVal.innerText = data.ip;
+                if (data.device) deviceVal.innerText = parseDeviceDetails(data.device);
+                if (data.battery) telemetryBattery.innerText = `${data.battery}%`;
+
+                addLog(`Transmissor ativado! Aparelho: ${deviceVal.innerText}`, 'success');
+
+                // Enviar modo de câmera padrão (FRONTAL) logo ao conectar
+                sendCameraCommand('user');
+            } else {
+                updateConnectionStatus(false, 'AGUARDANDO');
+                placeholder.style.display = 'flex';
+                addLog('Transmissor desconectou-se da sala.', 'warn');
+            }
+        });
+
+        // Recebimento contínuo de quadros (Stream sem tela preta/sem piscar)
+        socket.on('stream-frame', (frameData) => {
+            imgBuffer.src = frameData;
+            updateConnectionStatus(true, 'TRANSMITINDO');
+        });
+
+        // Recebimento de Coordenadas GPS
+        socket.on('location-update', (loc) => {
+            if (loc && loc.lat && loc.lng) {
+                updateLocation(loc.lat, loc.lng, loc.accuracy, loc.speed);
+                addLog(`GPS Atualizado: Lat ${loc.lat.toFixed(5)}, Lng ${loc.lng.toFixed(5)} (${Math.round(loc.accuracy || 0)}m precision)`, 'info');
+            }
+        });
+
+        // Receber informações detalhadas do transmissor
+        socket.on('transmitter-info', (info) => {
+            if (!info) return;
+            if (info.ip) txIpVal.innerText = info.ip;
+            if (info.device) deviceVal.innerText = parseDeviceDetails(info.device);
+            if (info.battery) telemetryBattery.innerText = `${info.battery}%`;
+            addLog(`Metadados do transmissor atualizados. Device: ${deviceVal.innerText}`, 'info');
+        });
+
+        // Medição de latência (Ping)
+        setInterval(() => {
+            if (socket && socket.connected) {
+                const start = Date.now();
+                socket.emit('ping-check', () => {
+                    const latency = Date.now() - start;
+                    pingVal.innerText = latency;
+                });
+            }
+        }, 4000);
+    }
+
+    function updateConnectionStatus(isConnected, label) {
+        if (isConnected) {
+            statusDot.className = 'dot on blink';
+            statusDotDesktop.className = 'dot on blink';
+            statusText.innerText = label;
+            statusTextDesktop.innerText = label;
+            statusText.style.color = 'var(--neon-green)';
+            statusTextDesktop.style.color = 'var(--neon-green)';
+        } else {
+            statusDot.className = 'dot';
+            statusDotDesktop.className = 'dot';
+            statusText.innerText = label;
+            statusTextDesktop.innerText = label;
+            statusText.style.color = '#94a3b8';
+            statusTextDesktop.style.color = '#94a3b8';
+        }
+    }
+
+    function sendCameraCommand(mode) {
+        activeCameraMode = mode;
+        if (mode === 'user') {
+            btnCamFront.classList.add('active');
+            btnCamBack.classList.remove('active');
+            camModeBadge.innerText = 'CÂMERA: FRONTAL [PADRÃO]';
+            camModeBadge.className = 'text-emerald-400 text-[10px] bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded';
+        } else {
+            btnCamBack.classList.add('active');
+            btnCamFront.classList.remove('active');
+            camModeBadge.innerText = 'CÂMERA: TRASEIRA';
+            camModeBadge.className = 'text-cyan-400 text-[10px] bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded';
+        }
+
+        if (socket && currentRoomId) {
+            socket.emit('change-camera', { room: currentRoomId, mode: mode });
+            addLog(`Comando enviado: Alterar câmera para [${mode === 'user' ? 'FRONTAL' : 'TRASEIRA'}]`, 'warn');
+        }
+    }
+
+    btnCamFront.addEventListener('click', () => sendCameraCommand('user'));
+    btnCamBack.addEventListener('click', () => sendCameraCommand('environment'));
+
+    btnSnapshot.addEventListener('click', () => {
+        if (canvas.width === 0) {
+            addLog('Nenhuma imagem no player para capturar foto.', 'warn');
+            return;
+        }
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `TACTICAL_SNAP_${Date.now()}.png`;
+        a.click();
+        addLog('Captura de tela (Snapshot PNG) salva no dispositivo!', 'success');
+    });
+
+    btnFullscreen.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            playerWrapper.requestFullscreen().catch(err => {
+                addLog(`Erro ao ativar Fullscreen: ${err.message}`, 'error');
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    function generateLink() {
+        const randomId = Math.random().toString(36).substring(2, 10);
+        currentRoomId = `sala_${randomId}`;
+        const fullUrl = `${TRANSMITTER_BASE_URL}?id=${currentRoomId}`;
+        generatedLinkInput.value = fullUrl;
+
+        // Atualizar QR Code
+        if (typeof QRCode !== 'undefined') {
+            qrcodeDiv.innerHTML = '';
+            qrcodeObj = new QRCode(qrcodeDiv, {
+                text: fullUrl,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        if (socket && socket.connected) {
+            socket.emit('create-room', currentRoomId);
+        }
+
+        addLog(`Novo link único de transmissão gerado: Sala [${currentRoomId}]`, 'success');
+    }
+
+    btnGenLink.addEventListener('click', () => {
+        generateLink();
+        btnGenLink.classList.add('!bg-cyan-400');
+        setTimeout(() => btnGenLink.classList.remove('!bg-cyan-400'), 400);
+    });
+
+    btnCopy.addEventListener('click', () => {
+        if (!generatedLinkInput.value) return;
+        
+        // Copiar com execCommand fallback seguro para iFrames
+        generatedLinkInput.select();
+        document.execCommand('copy');
+
+        copyBtnText.innerText = 'COPIADO!';
+        btnCopy.classList.add('active');
+        addLog('Link transmitido copiado para a área de transferência.', 'info');
+
+        setTimeout(() => {
+            copyBtnText.innerText = 'COPIAR';
+            btnCopy.classList.remove('active');
+        }, 2000);
+    });
+
+    btnQrToggle.addEventListener('click', () => {
+        qrContainer.classList.toggle('hidden');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initMap();
+        initSocket();
+        generateLink();
+        addLog('Central Tática // Receptor pronta e operando em 100%.', 'success');
+    });
 </script>
 </body>
 </html>
